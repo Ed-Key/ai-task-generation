@@ -1,0 +1,9 @@
+# Ignore everything
+*
+
+# Except the two specific files
+!gmail-api-qa-tool.js
+!gmail-api-qa-tool-enhanced.js
+
+# Don't ignore .gitignore itself
+!.gitignore
