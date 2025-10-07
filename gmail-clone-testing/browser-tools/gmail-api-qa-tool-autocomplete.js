@@ -1391,6 +1391,8 @@ Browser: ${navigator.userAgent}
         display: flex;
         flex-wrap: wrap;
         gap: 6px;
+        max-height: 150px;
+        overflow-y: auto;
       }
 
       .example-chip {
@@ -1772,23 +1774,27 @@ Browser: ${navigator.userAgent}
       }
 
       .qa-content::-webkit-scrollbar,
-      .code-block::-webkit-scrollbar {
+      .code-block::-webkit-scrollbar,
+      .example-chips::-webkit-scrollbar {
         width: 8px;
       }
 
       .qa-content::-webkit-scrollbar-track,
-      .code-block::-webkit-scrollbar-track {
+      .code-block::-webkit-scrollbar-track,
+      .example-chips::-webkit-scrollbar-track {
         background: #f1f1f1;
       }
 
       .qa-content::-webkit-scrollbar-thumb,
-      .code-block::-webkit-scrollbar-thumb {
+      .code-block::-webkit-scrollbar-thumb,
+      .example-chips::-webkit-scrollbar-thumb {
         background: #888;
         border-radius: 4px;
       }
 
       .qa-content::-webkit-scrollbar-thumb:hover,
-      .code-block::-webkit-scrollbar-thumb:hover {
+      .code-block::-webkit-scrollbar-thumb:hover,
+      .example-chips::-webkit-scrollbar-thumb:hover {
         background: #555;
       }
 

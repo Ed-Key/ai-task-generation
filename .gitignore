@@ -1,10 +1,35 @@
 # Ignore everything
 *
 
-# Except the three specific files
-!gmail-api-qa-tool.js
-!gmail-api-qa-tool-enhanced.js
-!gmail-api-qa-tool-autocomplete.js
+# Except gmail-clone-testing directory (with subdirectories)
+!gmail-clone-testing/
+!gmail-clone-testing/*/
+!gmail-clone-testing/*/*/
+!gmail-clone-testing/*/*/*/
+
+# But ignore credentials within that directory
+gmail-clone-testing/credentials/*
+!gmail-clone-testing/credentials/.gitignore
+
+# Allow the browser tools
+!gmail-clone-testing/browser-tools/*.js
+!gmail-clone-testing/browser-tools/archive/*.js
+
+# Allow Python tools (they're untracked, this is for future)
+!gmail-clone-testing/python-tools/*.py
+
+# Allow documentation
+!gmail-clone-testing/*.md
+!gmail-clone-testing/*/*.md
+
+# Allow extension files (except config.js which is in local .gitignore)
+!gmail-clone-testing/extension/*.js
+!gmail-clone-testing/extension/*.json
+!gmail-clone-testing/extension/*.md
+!gmail-clone-testing/extension/panel/
+!gmail-clone-testing/extension/panel/*
+!gmail-clone-testing/extension/icons/
+!gmail-clone-testing/extension/icons/*
 
 # Don't ignore .gitignore itself
 !.gitignore

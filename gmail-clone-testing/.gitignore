@@ -1,0 +1,32 @@
+# Python tools (keep local, not in repo)
+python-tools/
+
+# Browser console tools (keep local, not in repo)
+browser-tools/
+
+# Generated reports (keep local, not in repo)
+bug-reports/
+
+# Reference data (keep local, not in repo)
+reference-data/
+
+# Documentation (keep local, not in repo)
+README.md
+
+# User-specific extension config (never commit credentials)
+extension/config.js
+credentials/
+
+# OS files
+.DS_Store
+Thumbs.db
+*~
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node modules (if we add any tooling later)
+node_modules/

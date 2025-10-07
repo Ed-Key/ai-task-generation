@@ -1,0 +1,49 @@
+{
+  "manifest_version": 3,
+  "name": "Gmail API QA Tool",
+  "version": "1.0.0",
+  "description": "Test Gmail API on both real Gmail and clone with visual UI feedback",
+
+  "permissions": [
+    "storage"
+  ],
+
+  "host_permissions": [
+    "https://mail.google.com/*",
+    "https://gmail.matrices.ai/*",
+    "https://gmail.googleapis.com/*",
+    "https://oauth2.googleapis.com/*"
+  ],
+
+  "content_scripts": [
+    {
+      "matches": [
+        "https://mail.google.com/*",
+        "https://gmail.matrices.ai/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+
+  "web_accessible_resources": [
+    {
+      "resources": ["panel/*"],
+      "matches": [
+        "https://mail.google.com/*",
+        "https://gmail.matrices.ai/*"
+      ]
+    }
+  ],
+
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
