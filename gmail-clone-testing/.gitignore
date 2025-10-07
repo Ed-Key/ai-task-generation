@@ -17,6 +17,10 @@ README.md
 extension/config.js
 credentials/
 
+# Local development notes (keep local only)
+extension/TESTING.md
+extension/PHASE1_COMPLETE.md
+
 # OS files
 .DS_Store
 Thumbs.db
