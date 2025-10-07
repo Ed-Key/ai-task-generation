@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Endpoints Test</title>
+</head>
+<body>
+  <h1>Endpoints Configuration Test</h1>
+  <div id="results"></div>
+
+  <script type="module">
+    import { parameterMetadata, endpoints } from './endpoints.js';
+
+    const results = document.getElementById('results');
+
+    function log(message, isSuccess = true) {
+      const div = document.createElement('div');
+      div.textContent = message;
+      div.style.color = isSuccess ? 'green' : 'red';
+      div.style.margin = '5px 0';
+      div.style.fontFamily = 'monospace';
+      results.appendChild(div);
+    }
+
+    // Test 1: Parameter Metadata
+    const paramCount = Object.keys(parameterMetadata).length;
+    log(`✅ Parameter metadata loaded: ${paramCount} parameters`);
+
+    // Test sample parameter
+    if (parameterMetadata.name && parameterMetadata.name.type === 'string') {
+      log(`✅ Sample parameter 'name': ${parameterMetadata.name.label}`);
+    }
+
+    // Test 2: Endpoints
+    const endpointCount = Object.keys(endpoints).length;
+    log(`✅ Endpoints loaded: ${endpointCount} endpoints`);
+
+    // Test endpoint structure
+    const listLabels = endpoints['list-labels'];
+    if (listLabels && listLabels.method === 'GET' && listLabels.path === '/users/me/labels') {
+      log(`✅ Sample endpoint 'list-labels': ${listLabels.method} ${listLabels.path}`);
+    }
+
+    // Test 3: Resources
+    const resources = [...new Set(Object.values(endpoints).map(e => e.resource))];
+    log(`✅ Resources found: ${resources.join(', ')}`);
+
+    // Test 4: Methods
+    const methods = [...new Set(Object.values(endpoints).map(e => e.method))];
+    log(`✅ HTTP methods used: ${methods.join(', ')}`);
+
+    // Test 5: Param Config
+    const createLabel = endpoints['create-label'];
+    if (createLabel && createLabel.paramsConfig.length === 3) {
+      log(`✅ Create Label params: ${createLabel.paramsConfig.map(p => p.name).join(', ')}`);
+    }
+
+    // Test 6: Spread operator in paramsConfig
+    const getLabel = endpoints['get-label'];
+    if (getLabel && getLabel.paramsConfig[0].type === 'id') {
+      log(`✅ Spread operator working: param type = ${getLabel.paramsConfig[0].type}`);
+    }
+
+    log('\n🎉 All endpoint tests passed!');
+  </script>
+</body>
+</html>

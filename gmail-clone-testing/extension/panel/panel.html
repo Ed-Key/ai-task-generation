@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gmail API QA Tool</title>
+  <link rel="stylesheet" href="panel.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <div class="qa-header">
+      <button class="close-btn" title="Close panel">×</button>
+      <h3>Gmail API QA Tool</h3>
+      <span id="mode-indicator" class="mode-badge"></span>
+    </div>
+
+    <!-- Content -->
+    <div class="qa-content">
+      <!-- Resource Filter -->
+      <div class="form-group">
+        <label for="resource-filter">Resource Type:</label>
+        <select id="resource-filter" class="param-input">
+          <option value="all">All Resources</option>
+          <option value="labels">Labels</option>
+          <option value="threads">Threads</option>
+          <option value="messages">Messages</option>
+          <option value="drafts">Drafts</option>
+        </select>
+      </div>
+
+      <!-- Endpoint Selection -->
+      <div class="form-group">
+        <label for="endpoint-select">Endpoint:</label>
+        <select id="endpoint-select" class="param-input">
+          <option value="">Select an endpoint...</option>
+        </select>
+      </div>
+
+      <!-- Endpoint Bar (hidden initially) -->
+      <div id="endpoint-bar" class="endpoint-bar" style="display: none;">
+        <span id="endpoint-method" class="endpoint-method"></span>
+        <span id="endpoint-name" class="endpoint-name"></span>
+        <span id="endpoint-path" class="endpoint-path"></span>
+      </div>
+
+      <!-- Documentation Section -->
+      <div id="docs-section"></div>
+
+      <!-- Parameters Form Section -->
+      <div id="params-section"></div>
+
+      <!-- Execute Button -->
+      <button class="execute-btn" id="execute-btn" style="display: none;">Execute API Call</button>
+
+      <!-- Request Section (hidden initially) -->
+      <div id="request-section" style="display: none;"></div>
+
+      <!-- Response Section (hidden initially) -->
+      <div id="response-section" style="display: none;"></div>
+    </div>
+  </div>
+
+  <script type="module" src="panel.js"></script>
+</body>
+</html>

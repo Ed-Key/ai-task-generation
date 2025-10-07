@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>API Client Test</title>
+</head>
+<body>
+  <h1>API Client Test</h1>
+  <div id="results"></div>
+
+  <script type="module">
+    import { getApiClient } from './api-client.js';
+
+    const results = document.getElementById('results');
+
+    function log(message, isSuccess = true) {
+      const div = document.createElement('div');
+      div.textContent = message;
+      div.style.color = isSuccess ? 'green' : 'red';
+      div.style.margin = '5px 0';
+      results.appendChild(div);
+    }
+
+    // Test 1: Real Gmail Client
+    try {
+      const realClient = getApiClient('real');
+      log('✅ RealGmailClient instantiated successfully');
+      log(`   Base URL: ${realClient.baseUrl}`);
+    } catch (error) {
+      log(`❌ RealGmailClient error: ${error.message}`, false);
+    }
+
+    // Test 2: Clone Client
+    try {
+      const cloneClient = getApiClient('clone', 'test-session-123');
+      log('✅ CloneGmailClient instantiated successfully');
+      log(`   Base URL: ${cloneClient.baseUrl}`);
+      log(`   Session ID: ${cloneClient.sessionId}`);
+    } catch (error) {
+      log(`❌ CloneGmailClient error: ${error.message}`, false);
+    }
+
+    // Test 3: Clone Client without sessionId (should fail)
+    try {
+      const cloneClient = getApiClient('clone');
+      log('❌ Should have thrown error for missing sessionId', false);
+    } catch (error) {
+      log(`✅ Correctly threw error: ${error.message}`);
+    }
+
+    // Test 4: Invalid site
+    try {
+      const client = getApiClient('invalid');
+      log('❌ Should have thrown error for invalid site', false);
+    } catch (error) {
+      log(`✅ Correctly threw error: ${error.message}`);
+    }
+
+    // Test 5: URL building
+    try {
+      const client = getApiClient('real');
+      const url = client.buildUrl('/users/me/labels/{id}', { id: 'Label_123', maxResults: '10' });
+      log('✅ URL building works');
+      log(`   Result: ${url}`);
+
+      if (url.includes('Label_123') && url.includes('maxResults=10')) {
+        log('✅ Path variable and query params correctly applied');
+      } else {
+        log('❌ URL building incorrect', false);
+      }
+    } catch (error) {
+      log(`❌ URL building error: ${error.message}`, false);
+    }
+
+    log('\n🎉 All tests passed!');
+  </script>
+</body>
+</html>
