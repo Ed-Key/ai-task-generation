@@ -6,6 +6,8 @@
 import { getApiClient } from './api-client.js';
 import { endpoints } from './endpoints.js';
 import { generateParamsForm, setupExampleChipListeners, cacheResponseData } from './ui-components.js';
+import { ComparisonEngine } from './comparison-engine.js';
+import { renderComparisonView } from './diff-renderer.js';
 
 class GmailQAPanelUI {
   constructor() {
@@ -13,6 +15,11 @@ class GmailQAPanelUI {
     this.sessionId = null;
     this.apiClient = null;
     this.currentEndpoint = null;
+    // Comparison mode properties
+    this.comparisonEngine = null;
+    this.comparisonModeEnabled = false;
+    this.realApiClient = null;
+    this.cloneApiClient = null;
   }
 
   /**
@@ -24,6 +31,16 @@ class GmailQAPanelUI {
     this.siteMode = site;
     this.sessionId = sessionId;
     this.apiClient = getApiClient(site, sessionId);
+
+    // Initialize dual API clients for comparison mode
+    try {
+      this.realApiClient = getApiClient('real', null);
+      this.cloneApiClient = getApiClient('clone', sessionId || 'placeholder');
+      this.comparisonEngine = new ComparisonEngine(this.realApiClient, this.cloneApiClient);
+      console.log('[Panel] Comparison engine initialized');
+    } catch (error) {
+      console.error('[Panel] Failed to initialize comparison engine:', error);
+    }
 
     console.log('[Panel] Initializing with:', { site, sessionId });
 
@@ -93,6 +110,7 @@ class GmailQAPanelUI {
 
     // Update UI
     this.updateEndpointBar(this.currentEndpoint);
+    this.showComparisonToggle();
     this.displayDocumentation(this.currentEndpoint);
     this.generateAndDisplayParamsForm();
     this.showExecuteButton();
@@ -166,11 +184,14 @@ class GmailQAPanelUI {
    */
   generateAndDisplayParamsForm() {
     const section = document.getElementById('params-section');
-    const formHtml = generateParamsForm(this.currentEndpoint);
+    const formHtml = generateParamsForm(this.currentEndpoint, this.siteMode);
     section.innerHTML = formHtml;
 
     // Setup event listeners for example chips
     setupExampleChipListeners(section);
+
+    // Setup event listeners for auto-list hints
+    this.setupAutoListHints(section);
   }
 
   /**
@@ -179,6 +200,107 @@ class GmailQAPanelUI {
   showExecuteButton() {
     const btn = document.getElementById('execute-btn');
     btn.style.display = 'block';
+  }
+
+  /**
+   * Show comparison toggle
+   */
+  showComparisonToggle() {
+    const container = document.getElementById('comparison-toggle-container');
+    if (container) {
+      container.style.display = 'block';
+    }
+  }
+
+  /**
+   * Setup comparison toggle handler
+   */
+  setupComparisonToggle() {
+    const toggle = document.getElementById('comparison-mode-toggle');
+    if (!toggle) {
+      console.warn('[Panel] Comparison toggle not found');
+      return;
+    }
+
+    toggle.addEventListener('change', (event) => {
+      this.comparisonModeEnabled = event.target.checked;
+      console.log('[Panel] Comparison mode:', this.comparisonModeEnabled ? 'ON' : 'OFF');
+    });
+
+    console.log('[Panel] Comparison toggle setup complete');
+  }
+
+  /**
+   * Setup auto-list hint button handlers
+   * @param {HTMLElement} container - Container with hint buttons
+   */
+  setupAutoListHints(container) {
+    const hintButtons = container.querySelectorAll('.auto-list-hint');
+
+    hintButtons.forEach(button => {
+      button.addEventListener('click', async () => {
+        const resourceType = button.dataset.resource;
+        console.log(`[Panel] Auto-list triggered for resource: ${resourceType}`);
+
+        // Save current endpoint
+        const originalEndpoint = this.currentEndpoint;
+
+        // Find the corresponding list endpoint (format: list-{resource})
+        const listEndpointId = `list-${resourceType}`;
+        const listEndpoint = endpoints[listEndpointId];
+
+        if (!listEndpoint) {
+          console.error(`[Panel] List endpoint not found: ${listEndpointId}`);
+          alert(`Could not find ${listEndpointId} endpoint`);
+          return;
+        }
+
+        try {
+          // Switch to List endpoint
+          console.log(`[Panel] Switching to ${listEndpoint.name}`);
+          this.currentEndpoint = listEndpoint;
+
+          // Update UI to show we're executing List
+          const responseSection = document.getElementById('response-section');
+          responseSection.innerHTML = '<div style="padding: 20px; text-align: center;">🔄 Fetching ' + resourceType + '...</div>';
+          responseSection.style.display = 'block';
+
+          // Execute the List API call
+          const result = await this.apiClient.executeRequest(
+            listEndpoint.path,
+            listEndpoint.method,
+            {},
+            null
+          );
+
+          if (result.error) {
+            console.error(`[Panel] Auto-list error:`, result.error);
+            alert(`Error fetching ${resourceType}: ${result.error}`);
+          } else {
+            // Cache the results
+            cacheResponseData(result.body, this.siteMode);
+            console.log(`[Panel] Auto-list successful, cached ${resourceType}`);
+          }
+
+          // Switch back to original endpoint
+          this.currentEndpoint = originalEndpoint;
+
+          // Regenerate form with cached data
+          this.generateAndDisplayParamsForm();
+
+          // Clear the temporary response display
+          responseSection.style.display = 'none';
+
+        } catch (error) {
+          console.error('[Panel] Auto-list error:', error);
+          alert(`Error: ${error.message}`);
+
+          // Switch back to original endpoint
+          this.currentEndpoint = originalEndpoint;
+          this.generateAndDisplayParamsForm();
+        }
+      });
+    });
   }
 
   /**
@@ -193,7 +315,7 @@ class GmailQAPanelUI {
   }
 
   /**
-   * Execute API call
+   * Execute API call (routes to single or comparison mode)
    */
   async executeApiCall() {
     if (!this.currentEndpoint) {
@@ -201,7 +323,18 @@ class GmailQAPanelUI {
       return;
     }
 
-    console.log('[Panel] Executing:', this.currentEndpoint.name);
+    if (this.comparisonModeEnabled) {
+      await this.executeComparisonMode();
+    } else {
+      await this.executeSingleMode();
+    }
+  }
+
+  /**
+   * Execute single API call (original logic)
+   */
+  async executeSingleMode() {
+    console.log('[Panel] Executing (single mode):', this.currentEndpoint.name);
 
     try {
       // Collect parameters
@@ -265,12 +398,110 @@ class GmailQAPanelUI {
 
         // Cache successful List responses
         if (result.status >= 200 && result.status < 300 && result.body) {
-          cacheResponseData(result.body);
+          cacheResponseData(result.body, this.siteMode);
         }
       }
 
     } catch (error) {
       console.error('[Panel] Execution error:', error);
+      this.displayError(error.message);
+    }
+  }
+
+  /**
+   * Execute comparison mode (dual API calls)
+   */
+  async executeComparisonMode() {
+    console.log('[Panel] Executing (comparison mode):', this.currentEndpoint.name);
+
+    try {
+      // Collect parameters
+      const params = this.collectFormParams();
+
+      // Validate required parameters
+      const validation = this.validateParams(params);
+      if (!validation.isValid) {
+        this.displayError(`Missing required parameters: ${validation.missing.join(', ')}`);
+        return;
+      }
+
+      // Separate parameters
+      const pathParams = {};
+      const queryParams = {};
+      const bodyParams = {};
+
+      if (this.currentEndpoint.paramsConfig) {
+        this.currentEndpoint.paramsConfig.forEach(paramConfig => {
+          const value = params[paramConfig.name];
+          if (value !== undefined && value !== null && value !== '') {
+            // Check if this param is in the path
+            if (this.currentEndpoint.path.includes(`{${paramConfig.name}}`)) {
+              pathParams[paramConfig.name] = value;
+            } else if (this.currentEndpoint.method === 'GET') {
+              queryParams[paramConfig.name] = value;
+            } else {
+              bodyParams[paramConfig.name] = value;
+            }
+          }
+        });
+      }
+
+      // Execute dual API call
+      const dualResult = await this.comparisonEngine.executeDual(
+        this.currentEndpoint.path,
+        this.currentEndpoint.method,
+        pathParams,
+        queryParams,
+        bodyParams
+      );
+
+      // Generate diff
+      const diff = this.comparisonEngine.generateDiff(
+        dualResult.real.body,
+        dualResult.clone.body
+      );
+
+      // Build URLs for display
+      const realUrl = this.realApiClient.buildUrl(this.currentEndpoint.path, { ...pathParams, ...queryParams });
+      const cloneUrl = this.cloneApiClient.buildUrl(this.currentEndpoint.path, { ...pathParams, ...queryParams });
+
+      // Enhance results with display info
+      const realResultEnhanced = {
+        ...dualResult.real,
+        url: realUrl,
+        method: this.currentEndpoint.method,
+        requestBody: bodyParams  // Renamed to avoid overwriting response body
+      };
+
+      const cloneResultEnhanced = {
+        ...dualResult.clone,
+        url: cloneUrl,
+        method: this.currentEndpoint.method,
+        requestBody: bodyParams  // Renamed to avoid overwriting response body
+      };
+
+      // Render comparison view
+      const comparisonHtml = renderComparisonView(realResultEnhanced, cloneResultEnhanced, diff);
+
+      // Display in response section
+      const responseSection = document.getElementById('response-section');
+      responseSection.innerHTML = comparisonHtml;
+      responseSection.style.display = 'block';
+
+      // Hide request section (comparison view includes requests)
+      const requestSection = document.getElementById('request-section');
+      requestSection.style.display = 'none';
+
+      // Cache successful List responses from both APIs (separately)
+      if (dualResult.real.status >= 200 && dualResult.real.status < 300 && dualResult.real.body) {
+        cacheResponseData(dualResult.real.body, 'real');
+      }
+      if (dualResult.clone.status >= 200 && dualResult.clone.status < 300 && dualResult.clone.body) {
+        cacheResponseData(dualResult.clone.body, 'clone');
+      }
+
+    } catch (error) {
+      console.error('[Panel] Comparison execution error:', error);
       this.displayError(error.message);
     }
   }
@@ -516,6 +747,7 @@ class GmailQAPanelUI {
     this.setupCloseButton();
     this.setupEndpointSelection();
     this.setupExecuteButton();
+    this.setupComparisonToggle();
 
     console.log('[Panel] Ready and waiting for INIT message');
   }

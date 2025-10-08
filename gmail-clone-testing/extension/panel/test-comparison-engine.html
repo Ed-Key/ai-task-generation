@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comparison Engine Tests</title>
+  <style>
+    body {
+      font-family: monospace;
+      padding: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .test-section {
+      margin: 20px 0;
+      padding: 15px;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+    }
+    .test-section.pass {
+      border-color: #0f9d58;
+      background: #f6fef9;
+    }
+    .test-section.fail {
+      border-color: #d93025;
+      background: #fef6f6;
+    }
+    .test-title {
+      font-weight: bold;
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+    .test-result {
+      margin: 5px 0;
+      padding: 5px;
+      background: #f8f9fa;
+      border-radius: 3px;
+    }
+    .pass { color: #0f9d58; font-weight: bold; }
+    .fail { color: #d93025; font-weight: bold; }
+    pre {
+      background: #f1f3f4;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧪 Comparison Engine Test Suite</h1>
+  <div id="test-results"></div>
+
+  <script type="module" src="./test-comparison-engine.js"></script>
+</body>
+</html>

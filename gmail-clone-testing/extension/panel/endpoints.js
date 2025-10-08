@@ -334,6 +334,20 @@ export const endpoints = {
     docs: 'Permanently deletes the specified message.'
   },
 
+  'send-message': {
+    id: 'send-message',
+    name: 'Send Message',
+    resource: 'messages',
+    method: 'POST',
+    path: '/users/me/messages/send',
+    paramsConfig: [
+      { ...parameterMetadata.to, name: 'to' },
+      { ...parameterMetadata.subject, name: 'subject' },
+      { ...parameterMetadata.body, name: 'body' }
+    ],
+    docs: 'Sends an email message. The message will be automatically encoded in RFC 2822 format and base64url encoded before sending.'
+  },
+
   // DRAFTS
   'list-drafts': {
     id: 'list-drafts',

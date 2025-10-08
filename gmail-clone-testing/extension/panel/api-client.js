@@ -4,6 +4,36 @@
  */
 
 /**
+ * Helper function to encode email for Gmail API send
+ * Converts email parameters to RFC 2822 format and base64url encodes
+ * @param {Object} params - Email parameters (to, subject, body)
+ * @returns {Object} Encoded email in format { raw: base64url_string }
+ */
+function encodeEmailForSend(params) {
+  // Build RFC 2822 compliant email
+  const emailLines = [
+    `To: ${params.to}`,
+    `Subject: ${params.subject}`,
+    'Content-Type: text/plain; charset=utf-8',
+    '',  // Blank line separates headers from body
+    params.body
+  ];
+
+  const rawEmail = emailLines.join('\n');
+
+  // Base64URL encode (note: different from regular base64)
+  // - Replace + with -
+  // - Replace / with _
+  // - Remove padding (=)
+  const base64Email = btoa(unescape(encodeURIComponent(rawEmail)))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+
+  return { raw: base64Email };
+}
+
+/**
  * Base API client interface
  */
 class BaseApiClient {
@@ -65,9 +95,30 @@ class RealGmailClient extends BaseApiClient {
 
   /**
    * Execute API request with OAuth authentication
+   * Supports two calling patterns:
+   * 1. executeRequest(endpoint, method, params, body) - single mode
+   * 2. executeRequest(endpoint, method, pathParams, queryParams, bodyParams) - comparison mode
    */
-  async executeRequest(endpoint, method, params, body) {
+  async executeRequest(endpoint, method, paramsOrPath, bodyOrQuery, maybeBody) {
     try {
+      // Detect calling pattern based on number of arguments
+      let params, body;
+
+      if (arguments.length === 5) {
+        // Comparison mode: (endpoint, method, pathParams, queryParams, bodyParams)
+        const pathParams = paramsOrPath;
+        const queryParams = bodyOrQuery;
+        const bodyParams = maybeBody;
+
+        // Merge path and query params for URL building
+        params = { ...pathParams, ...queryParams };
+        body = bodyParams;
+      } else {
+        // Single mode: (endpoint, method, params, body)
+        params = paramsOrPath;
+        body = bodyOrQuery;
+      }
+
       // Build URL
       const url = this.buildUrl(endpoint, { ...params });
 
@@ -82,6 +133,18 @@ class RealGmailClient extends BaseApiClient {
           'Content-Type': 'application/json'
         }
       };
+
+      // Special handling for send-message and draft endpoints that need email encoding
+      if (body && body.to && body.subject && body.body) {
+        if (endpoint.includes('/messages/send')) {
+          console.log('[RealGmailClient] Encoding email for send endpoint');
+          body = encodeEmailForSend(body);
+        } else if (endpoint.includes('/drafts')) {
+          console.log('[RealGmailClient] Encoding email for draft endpoint');
+          // Drafts need the message wrapped in a message object
+          body = { message: encodeEmailForSend(body) };
+        }
+      }
 
       // Add body for non-GET requests
       if (body && Object.keys(body).length > 0 && method !== 'GET') {
@@ -139,9 +202,30 @@ class CloneGmailClient extends BaseApiClient {
 
   /**
    * Execute API request with sessionId authentication
+   * Supports two calling patterns:
+   * 1. executeRequest(endpoint, method, params, body) - single mode
+   * 2. executeRequest(endpoint, method, pathParams, queryParams, bodyParams) - comparison mode
    */
-  async executeRequest(endpoint, method, params, body) {
+  async executeRequest(endpoint, method, paramsOrPath, bodyOrQuery, maybeBody) {
     try {
+      // Detect calling pattern based on number of arguments
+      let params, body;
+
+      if (arguments.length === 5) {
+        // Comparison mode: (endpoint, method, pathParams, queryParams, bodyParams)
+        const pathParams = paramsOrPath;
+        const queryParams = bodyOrQuery;
+        const bodyParams = maybeBody;
+
+        // Merge path and query params for URL building
+        params = { ...pathParams, ...queryParams };
+        body = bodyParams;
+      } else {
+        // Single mode: (endpoint, method, params, body)
+        params = paramsOrPath;
+        body = bodyOrQuery;
+      }
+
       // Build URL
       const url = this.buildUrl(endpoint, { ...params });
 
@@ -153,6 +237,18 @@ class CloneGmailClient extends BaseApiClient {
         },
         credentials: 'include' // Include cookies
       };
+
+      // Special handling for send-message and draft endpoints that need email encoding
+      if (body && body.to && body.subject && body.body) {
+        if (endpoint.includes('/messages/send')) {
+          console.log('[CloneGmailClient] Encoding email for send endpoint');
+          body = encodeEmailForSend(body);
+        } else if (endpoint.includes('/drafts')) {
+          console.log('[CloneGmailClient] Encoding email for draft endpoint');
+          // Drafts need the message wrapped in a message object
+          body = { message: encodeEmailForSend(body) };
+        }
+      }
 
       // Add body for non-GET requests
       if (body && Object.keys(body).length > 0 && method !== 'GET') {

@@ -2,45 +2,70 @@
  * UI Components - Form rendering with autocomplete support
  */
 
-// ===== RESPONSE CACHE =====
+// ===== RESPONSE CACHE (Separate for Real and Clone) =====
 export const responseCache = {
-  labels: [],
-  threads: [],
-  messages: [],
-  drafts: [],
-  lastUpdated: null
+  real: {
+    labels: [],
+    threads: [],
+    messages: [],
+    drafts: [],
+    lastUpdated: null
+  },
+  clone: {
+    labels: [],
+    threads: [],
+    messages: [],
+    drafts: [],
+    lastUpdated: null
+  }
 };
 
 /**
  * Cache response data from List operations for autocomplete
  * @param {Object} data - API response data
+ * @param {string} mode - 'real' or 'clone'
  */
-export function cacheResponseData(data) {
+export function cacheResponseData(data, mode = 'real') {
+  if (!responseCache[mode]) {
+    console.warn(`[Cache] Invalid mode: ${mode}, defaulting to 'real'`);
+    mode = 'real';
+  }
+
   if (data.labels) {
-    responseCache.labels = data.labels;
-    responseCache.lastUpdated = Date.now();
+    responseCache[mode].labels = data.labels;
+    responseCache[mode].lastUpdated = Date.now();
+    console.log(`[Cache] Cached ${data.labels.length} labels for ${mode}`);
   }
   if (data.threads) {
-    responseCache.threads = data.threads;
-    responseCache.lastUpdated = Date.now();
+    responseCache[mode].threads = data.threads;
+    responseCache[mode].lastUpdated = Date.now();
+    console.log(`[Cache] Cached ${data.threads.length} threads for ${mode}`);
   }
   if (data.messages) {
-    responseCache.messages = data.messages;
-    responseCache.lastUpdated = Date.now();
+    responseCache[mode].messages = data.messages;
+    responseCache[mode].lastUpdated = Date.now();
+    console.log(`[Cache] Cached ${data.messages.length} messages for ${mode}`);
   }
   if (data.drafts) {
-    responseCache.drafts = data.drafts;
-    responseCache.lastUpdated = Date.now();
+    responseCache[mode].drafts = data.drafts;
+    responseCache[mode].lastUpdated = Date.now();
+    console.log(`[Cache] Cached ${data.drafts.length} drafts for ${mode}`);
   }
 }
 
 /**
  * Get cached suggestions for autocomplete
  * @param {string} resourceType - Resource type (labels, threads, messages, drafts)
+ * @param {string} mode - 'real' or 'clone'
  * @returns {Array} Array of suggestion objects
  */
-export function getCachedSuggestions(resourceType) {
-  const cached = responseCache[resourceType] || [];
+export function getCachedSuggestions(resourceType, mode = 'real') {
+  if (!responseCache[mode]) {
+    console.warn(`[Cache] Invalid mode: ${mode}, defaulting to 'real'`);
+    mode = 'real';
+  }
+
+  const cached = responseCache[mode][resourceType] || [];
   return cached.map(item => ({
     id: item.id,
     name: item.name || item.snippet || (item.id.substring(0, 30) + '...'),
@@ -61,10 +86,11 @@ function capitalize(str) {
  * Render ID field with autocomplete suggestions
  * @param {Object} param - Parameter configuration
  * @param {string} resourceType - Resource type for suggestions
+ * @param {string} mode - 'real' or 'clone' to determine which cache to use
  * @returns {string} HTML string
  */
-export function renderIdFieldWithAutocomplete(param, resourceType) {
-  const suggestions = getCachedSuggestions(resourceType);
+export function renderIdFieldWithAutocomplete(param, resourceType, mode = 'real') {
+  const suggestions = getCachedSuggestions(resourceType, mode);
   const hasCache = suggestions.length > 0;
 
   const requiredBadge = param.required
@@ -99,7 +125,9 @@ export function renderIdFieldWithAutocomplete(param, resourceType) {
           ℹ️ ${param.helpText}
         </div>
         <div class="no-cache-hint">
-          <p>💡 Run "List ${capitalize(resourceType)}" first to see available options</p>
+          <button class="auto-list-hint" data-resource="${resourceType}">
+            💡 Run "List ${capitalize(resourceType)}" first to see available options
+          </button>
         </div>
       `}
     </div>
@@ -110,11 +138,12 @@ export function renderIdFieldWithAutocomplete(param, resourceType) {
  * Render a single parameter input field
  * @param {Object} param - Parameter configuration
  * @param {string} resourceType - Resource type (for ID fields)
+ * @param {string} mode - 'real' or 'clone' to determine which cache to use
  * @returns {string} HTML string
  */
-export function renderParam(param, resourceType = null) {
+export function renderParam(param, resourceType = null, mode = 'real') {
   if (param.type === 'id') {
-    return renderIdFieldWithAutocomplete(param, resourceType);
+    return renderIdFieldWithAutocomplete(param, resourceType, mode);
   }
 
   const isRequired = param.required;
@@ -226,16 +255,17 @@ export function renderParam(param, resourceType = null) {
 /**
  * Generate complete params form for an endpoint
  * @param {Object} endpoint - Endpoint configuration
+ * @param {string} mode - 'real' or 'clone' to determine which cache to use
  * @returns {string} HTML string
  */
-export function generateParamsForm(endpoint) {
+export function generateParamsForm(endpoint, mode = 'real') {
   if (!endpoint.paramsConfig || endpoint.paramsConfig.length === 0) {
     return '';
   }
 
   let html = '<div class="params-form">';
   endpoint.paramsConfig.forEach(param => {
-    html += renderParam(param, endpoint.resource);
+    html += renderParam(param, endpoint.resource, mode);
   });
   html += '</div>';
 
